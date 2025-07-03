@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduBot - Asistente Virtual Estudiantil</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .bot-avatar {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .user-avatar {
+            background: #6c757d;
+            color: white;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 0.9em;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #4facfe;
+        }
+
+        .send-button {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .send-button:hover {
+            transform: scale(1.1);
+        }
+
+        .quick-options {
+            padding: 0 20px 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-option {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-option:hover {
+            background: #1976d2;
+            color: white;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px 0;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4facfe;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="status-indicator"></div>
+            <h1>🤖 EduBot</h1>
+            <p>Asistente Virtual Estudiantil</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="avatar bot-avatar">🤖</div>
+                <div class="message-content">
+                    ¡Hola! Soy EduBot, tu asistente virtual estudiantil. Estoy aquí para ayudarte con preguntas frecuentes sobre la universidad. ¿En qué puedo ayudarte hoy?
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-options">
+            <button class="quick-option" onclick="sendQuickMessage('¿Cómo me inscribo a materias?')">📚 Inscripciones</button>
+            <button class="quick-option" onclick="sendQuickMessage('¿Cuándo son los exámenes?')">📅 Exámenes</button>
+            <button class="quick-option" onclick="sendQuickMessage('¿Dónde está la biblioteca?')">📍 Ubicaciones</button>
+            <button class="quick-option" onclick="sendQuickMessage('¿Cómo accedo al campus virtual?')">💻 Campus Virtual</button>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="message bot">
+                <div class="avatar bot-avatar">🤖</div>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input">
+            <div class="input-container">
+                <input type="text" class="input-field" id="messageInput" placeholder="Escribe tu pregunta aquí..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" onclick="sendMessage()">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base de conocimiento del chatbot
+        const knowledge = {
+            'inscripciones': {
+                keywords: ['inscribir', 'inscripcion', 'registrar', 'materias', 'asignaturas', 'cursos'],
+                response: '📚 Para inscribirte a materias:\n\n1. Ingresa al sistema académico con tu usuario\n2. Ve a la sección "Inscripción de Materias"\n3. Selecciona el semestre actual\n4. Elige las materias disponibles\n5. Confirma tu inscripción\n\n⏰ Período de inscripciones: Del 15 al 30 de cada mes antes del inicio del semestre.'
+            },
+            'examenes': {
+                keywords: ['examen', 'evaluacion', 'fecha', 'calendario', 'parcial', 'final'],
+                response: '📅 Calendario de Exámenes:\n\n• Primer Parcial: Semana 8 del semestre\n• Segundo Parcial: Semana 15 del semestre\n• Exámenes Finales: Última semana del semestre\n• Exámenes de Recuperación: Una semana después de finales\n\n📋 Puedes consultar fechas específicas en el campus virtual o en la secretaría académica.'
+            },
+            'biblioteca': {
+                keywords: ['biblioteca', 'libros', 'estudio', 'ubicacion', 'donde'],
+                response: '📚 La Biblioteca Central está ubicada:\n\n📍 Edificio A, Planta Baja\n⏰ Horarios:\n• Lunes a Viernes: 7:00 AM - 10:00 PM\n• Sábados: 8:00 AM - 6:00 PM\n• Domingos: 2:00 PM - 8:00 PM\n\n🔗 También puedes acceder a la biblioteca digital desde el campus virtual.'
+            },
+            'campus_virtual': {
+                keywords: ['campus virtual', 'plataforma', 'acceso', 'login', 'sistema'],
+                response: '💻 Para acceder al Campus Virtual:\n\n🌐 URL: www.universidad.edu/campus\n👤 Usuario: Tu número de estudiante\n🔑 Contraseña: La que estableciste al registrarte\n\n❓ Si olvidaste tu contraseña:\n1. Haz clic en "Olvidé mi contraseña"\n2. Ingresa tu email institucional\n3. Revisa tu correo para el enlace de recuperación'
+            },
+            'becas': {
+                keywords: ['beca', 'ayuda', 'financiamiento', 'descuento'],
+                response: '💰 Información sobre Becas:\n\n📋 Tipos disponibles:\n• Beca de Excelencia Académica (90% descuento)\n• Beca Socioeconómica (50-80% descuento)\n• Beca Deportiva (30-60% descuento)\n\n📅 Convocatorias: Febrero y Agosto\n📍 Oficina de Bienestar Estudiantil - Edificio B, 2do piso'
+            },
+            'horarios': {
+                keywords: ['horario', 'clases', 'tiempo', 'cronograma'],
+                response: '⏰ Horarios de Clases:\n\n🌅 Jornada Matutina: 7:00 AM - 12:00 PM\n🌞 Jornada Vespertina: 2:00 PM - 7:00 PM\n🌙 Jornada Nocturna: 6:00 PM - 10:00 PM\n\n📱 Consulta tu horario específico en el campus virtual o descarga la app móvil universitaria.'
+            }
+        };
+
+        function findBestMatch(message) {
+            const lowerMessage = message.toLowerCase();
+            let bestMatch = null;
+            let maxMatches = 0;
+
+            for (const [topic, data] of Object.entries(knowledge)) {
+                const matches = data.keywords.filter(keyword => 
+                    lowerMessage.includes(keyword.toLowerCase())
+                ).length;
+
+                if (matches > maxMatches) {
+                    maxMatches = matches;
+                    bestMatch = data.response;
+                }
+            }
+
+            return bestMatch;
+        }
+
+        function addMessage(content, isUser = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${isUser ? 'user-avatar' : 'bot-avatar'}`;
+            avatar.textContent = isUser ? '👤' : '🤖';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.style.whiteSpace = 'pre-line';
+            messageContent.textContent = content;
+
+            if (isUser) {
+                messageDiv.appendChild(messageContent);
+                messageDiv.appendChild(avatar);
+            } else {
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'block';
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function generateResponse(message) {
+            const response = findBestMatch(message);
+            
+            if (response) {
+                return response;
+            }
+
+            // Respuestas por defecto para casos no encontrados
+            const defaultResponses = [
+                "🤔 No tengo información específica sobre esa consulta. ¿Podrías ser más específico?\n\nPuedes preguntarme sobre:\n• Inscripciones de materias\n• Fechas de exámenes\n• Ubicación de la biblioteca\n• Acceso al campus virtual\n• Becas y ayudas\n• Horarios de clases",
+                "📞 Para consultas específicas que no puedo resolver, te recomiendo contactar:\n\n• Secretaría Académica: ext. 1234\n• Bienestar Estudiantil: ext. 5678\n• Mesa de Ayuda IT: ext. 9012\n\n💬 También puedes escribir a: info@universidad.edu"
+            ];
+
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Agregar mensaje del usuario
+            addMessage(message, true);
+            input.value = '';
+
+            // Mostrar indicador de escritura
+            showTypingIndicator();
+
+            // Simular tiempo de respuesta
+            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+
+            // Ocultar indicador y mostrar respuesta
+            hideTypingIndicator();
+            const response = generateResponse(message);
+            addMessage(response);
+        }
+
+        function sendQuickMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Enfocar el input al cargar
+        window.onload = function() {
+            document.getElementById('messageInput').focus();
+        };
+    </script>
+</body>
+</html>
